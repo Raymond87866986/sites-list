@@ -1,0 +1,176 @@
+MainActivity.java
+package com.example.myapplication;
+
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.BaseAdapter;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import java.util.ArrayList;
+
+public class MainActivity extends AppCompatActivity {
+
+    EditText editUrl;
+    Button btnAdd;
+    ListView listView;
+    ArrayList<String> urlList;
+    UrlAdapter adapter;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        editUrl = findViewById(R.id.editUrl);
+        btnAdd = findViewById(R.id.btnAdd);
+        listView = findViewById(R.id.listView);
+
+        urlList = new ArrayList<>();
+        adapter = new UrlAdapter();
+        listView.setAdapter(adapter);
+
+        btnAdd.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                addUrl();
+            }
+        });
+    }
+
+    private void addUrl() {
+        String url = editUrl.getText().toString().trim();
+
+        if (url.isEmpty()) {
+            Toast.makeText(this, "لطفاً آدرس را وارد کنید", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            url = "https://" + url;
+        }
+
+        urlList.add(url);
+        adapter.notifyDataSetChanged();
+        editUrl.setText("");
+    }
+
+    private void editUrl(final int position) {
+        String currentUrl = urlList.get(position);
+        final EditText input = new EditText(this);
+        input.setText(currentUrl);
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("ویرایش آدرس");
+        builder.setView(input);
+
+        builder.setPositiveButton("ذخیره", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                String newUrl = input.getText().toString().trim();
+                if (!newUrl.isEmpty()) {
+                    if (!newUrl.startsWith("http://") && !newUrl.startsWith("https://")) {
+                        newUrl = "https://" + newUrl;
+                    }
+                    urlList.set(position, newUrl);
+                    adapter.notifyDataSetChanged();
+                }
+            }
+        });
+
+        builder.setNegativeButton("لغو", null);
+        builder.show();
+    }
+
+    private void deleteUrl(final int position) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("حذف آدرس");
+        builder.setMessage("آیا مطمئن هستید؟");
+
+        builder.setPositiveButton("بله", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                urlList.remove(position);
+                adapter.notifyDataSetChanged();
+            }
+        });
+
+        builder.setNegativeButton("خیر", null);
+        builder.show();
+    }
+
+    private void openUrl(String url) {
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            startActivity(intent);
+        } catch (Exception e) {
+            Toast.makeText(this, "خطا در باز کردن لینک", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    class UrlAdapter extends BaseAdapter {
+
+        @Override
+        public int getCount() {
+            return urlList.size();
+        }
+
+        @Override
+        public Object getItem(int position) {
+            return urlList.get(position);
+        }
+
+        @Override
+        public long getItemId(int position) {
+            return position;
+        }
+@Override
+public View getView(final int position, View convertView, ViewGroup parent) {
+            if (convertView == null) {
+                convertView = LayoutInflater.from(MainActivity.this).inflate(R.layout.list_item, parent, false);
+            }
+
+            TextView tvUrl = convertView.findViewById(R.id.tvUrl);
+            Button btnEdit = convertView.findViewById(R.id.btnEdit);
+            Button btnDelete = convertView.findViewById(R.id.btnDelete);
+
+            final String url = urlList.get(position);
+            tvUrl.setText(url);
+
+            tvUrl.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    openUrl(url);
+                }
+            });
+
+            btnEdit.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    editUrl(position);
+                }
+            });
+
+            btnDelete.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    deleteUrl(position);
+                }
+            });
+
+            return convertView;
+        }
+    }
+}
